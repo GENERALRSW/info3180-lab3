@@ -1,5 +1,7 @@
-from app import app
+from app import app, mail
 from flask import render_template, request, redirect, url_for, flash
+from flask_mail import Message
+from .forms import RegistrationForm
 
 
 ###
@@ -16,6 +18,38 @@ def home():
 def about():
     """Render the website's about page."""
     return render_template('about.html', name="Mary Jane")
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """Render the registration page and handle form submission."""
+    form = RegistrationForm()
+
+    if request.method == 'POST' and form.validate_on_submit():
+        first_name = form.first_name.data
+        last_name = form.last_name.data
+        username = form.username.data
+        email = form.email.data
+
+        msg = Message(
+            subject='Registration Successful',
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[email]
+        )
+        msg.body = f'''Hello {first_name} {last_name},
+
+You have successfully registered with the username: {username}.
+
+Thank you for registering!
+'''
+        mail.send(msg)
+
+        flash('You have been successfully registered!', 'success')
+        return redirect(url_for('home'))
+    else:
+        flash_errors(form)
+
+    return render_template('register.html', form=form)
 
 
 ###
