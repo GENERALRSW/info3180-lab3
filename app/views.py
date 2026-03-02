@@ -1,7 +1,7 @@
 from app import app, mail
 from flask import render_template, request, redirect, url_for, flash
 from flask_mail import Message
-from .forms import RegistrationForm
+from .forms import RegistrationForm, ContactForm
 
 
 ###
@@ -19,45 +19,37 @@ def about():
     """Render the website's about page."""
     return render_template('about.html', name="Mary Jane")
 
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    """Render the registration page and handle form submission."""
-    form = RegistrationForm()
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    """Render the contact page and handle form submission."""
+    form = ContactForm()
 
     if request.method == 'POST' and form.validate_on_submit():
-        first_name = form.first_name.data
-        last_name = form.last_name.data
-        username = form.username.data
+        name = form.name.data
         email = form.email.data
+        subject = form.subject.data
+        message = form.message.data
 
         msg = Message(
-            subject='Registration Successful',
-            sender=app.config['MAIL_USERNAME'],
-            recipients=[email]
+            subject=subject,
+            sender=(name, email),
+            recipients=[app.config['MAIL_USERNAME']]
         )
-        msg.body = f'''Hello {first_name} {last_name},
-
-You have successfully registered with the username: {username}.
-
-Thank you for registering!
-'''
+        msg.body = f'From: {name} <{email}>\n\n{message}'
         mail.send(msg)
 
-        flash('You have been successfully registered!', 'success')
+        flash('Your message was successfully sent!', 'success')
         return redirect(url_for('home'))
     else:
         flash_errors(form)
 
-    return render_template('register.html', form=form)
+    return render_template('contact.html', form=form)
 
 
 ###
 # The functions below should be applicable to all Flask apps.
 ###
 
-
-# Flash errors from the form if validation fails
 def flash_errors(form):
     for field, errors in form.errors.items():
         for error in errors:
@@ -76,11 +68,6 @@ def send_text_file(file_name):
 
 @app.after_request
 def add_header(response):
-    """
-    Add headers to both force latest IE rendering engine or Chrome Frame,
-    and also tell the browser not to cache the rendered page. If we wanted
-    to we could change max-age to 600 seconds which would be 10 minutes.
-    """
     response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
     response.headers['Cache-Control'] = 'public, max-age=0'
     return response
